@@ -1,34 +1,19 @@
 const crypto = require('crypto');
-const path = require('path');
-const { readJsonArray, writeJsonArray } = require('./jsonFileStore');
-
-const USERS_FILE = path.join(__dirname, '..', 'users.json');
+const db = require('./db');
 
 async function findByEmail(email) {
-  const users = await readJsonArray(USERS_FILE);
-  const normalizedEmail = email.trim().toLowerCase();
-  // user.email && ... : purane records jinme email nahi hai, unse crash na ho
-  return users.find((user) => user.email && user.email.toLowerCase() === normalizedEmail);
+  return db.findUser(email);
 }
 
 async function createUser({ email, password }) {
-  const users = await readJsonArray(USERS_FILE);
-  const normalizedEmail = email.trim().toLowerCase();
-
-  if (users.some((user) => user.email && user.email.toLowerCase() === normalizedEmail)) {
-    return null;
-  }
-
   const user = {
     id: crypto.randomUUID(),
-    email: normalizedEmail,
+    email: email.trim().toLowerCase(),
     password,
     createdAt: new Date().toISOString()
   };
-
-  users.push(user);
-  await writeJsonArray(USERS_FILE, users);
-  return user;
+  const created = await db.createUser(user);
+  return created ? user : null;
 }
 
 module.exports = { findByEmail, createUser };
